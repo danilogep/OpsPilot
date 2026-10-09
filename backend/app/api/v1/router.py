@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from app.domains.assistant.router import router as assistant_router
 from app.domains.audit.router import router as audit_router
 from app.domains.auth.router import router as auth_router
 from app.domains.customers.router import router as customers_router
 from app.domains.imports.router import router as imports_router
+from app.domains.knowledge.router import router as knowledge_router
 from app.domains.leads.router import router as leads_router
 from app.domains.organizations.router import router as dashboard_router
 from app.domains.plans.router import router as plans_router
@@ -21,4 +23,6 @@ api_router.include_router(customers_router)
 api_router.include_router(plans_router)
 api_router.include_router(renewals_router)
 api_router.include_router(leads_router)
+api_router.include_router(knowledge_router)
+api_router.include_router(assistant_router)
 api_router.include_router(audit_router)
