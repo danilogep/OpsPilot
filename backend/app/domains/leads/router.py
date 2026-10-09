@@ -87,12 +87,20 @@ async def lead_indicators(session: SessionDep, user: RequireViewer) -> LeadIndic
 @router.get("/export", summary="Exportar leads em CSV")
 async def export_leads(session: SessionDep, user: RequireViewer, filters: FiltersDep) -> Response:
     """Exporta a listagem filtrada de leads em CSV."""
-    leads, _ = await service.list_leads(
+    leads, total = await service.list_leads(
         session,
         organization_id=user.organization_id,
         params=PageParams(page=1, page_size=200),
         filters=filters,
     )
+    for page in range(2, (total + 199) // 200 + 1):
+        batch, _ = await service.list_leads(
+            session,
+            organization_id=user.organization_id,
+            params=PageParams(page=page, page_size=200),
+            filters=filters,
+        )
+        leads.extend(batch)
     return csv_response(
         filename=f"leads-{utcnow().date().isoformat()}.csv",
         headers=service.CSV_HEADERS,

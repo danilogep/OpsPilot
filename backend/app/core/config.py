@@ -6,12 +6,13 @@ embutido: os defaults servem apenas para o ambiente local de demonstração.
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 LLMProviderName = Literal["mock", "anthropic", "openai", "gemini"]
 EmbeddingsProviderName = Literal["none", "mock", "openai"]
@@ -44,7 +45,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "insecure-local-demo-secret-change-me"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
-    cors_origins: list[str] = Field(
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
             "http://localhost:4173",
@@ -88,7 +89,7 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             raw = value.strip()
             if raw.startswith("["):
-                return raw
+                return json.loads(raw)
             return [item.strip() for item in raw.split(",") if item.strip()]
         return value
 

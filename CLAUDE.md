@@ -35,7 +35,7 @@ frontend (React/Vite/TS)  ──HTTP/JSON──>  backend (FastAPI)  ──async
 - **Camadas**: `api` (routers HTTP) → `domains/*/service.py` (regra de negócio) → `db/models` (persistência).
 - **Schemas** Pydantic v2 em `domains/*/schemas.py`. Nunca expor modelo ORM direto.
 - **Multi-tenant** por `organization_id` em todas as tabelas de negócio. Toda query de negócio
-  passa por `organization_id` (ver `app/core/tenancy.py`).
+  passa por `organization_id` nos serviços de domínio e pelas dependências em `app/api/deps.py`.
 - **RAG** obrigatório sem API externa: busca textual no PostgreSQL (`to_tsvector`/`plainto_tsquery`)
   com fallback portátil para SQLite (usado nos testes). Ver `docs/adr/003-rag-fallback.md`.
 - **Agentes** explícitos e limitados: `ToolRegistry` com ferramentas allowlisted e limite de passos.

@@ -222,7 +222,13 @@ async def _search_postgres(
 ) -> list[SearchHit]:
     """Busca com Full Text Search nativo do PostgreSQL."""
     vector = func.to_tsvector("portuguese", DocumentChunk.content)
-    ts_query = func.plainto_tsquery("portuguese", query)
+    # ``plainto_tsquery`` liga cada palavra com AND. Uma pergunta natural quase
+    # sempre contém palavras que não aparecem literalmente no documento (por
+    # exemplo, “como funciona”); usar prefixos com OR permite recuperar os
+    # trechos relevantes e o ranking/coverage abaixo elimina correspondências
+    # fracas.
+    ts_query_text = " | ".join(f"{term}:*" for term in terms)
+    ts_query = func.to_tsquery("portuguese", ts_query_text)
     rank = func.ts_rank(vector, ts_query)
 
     stmt = (
@@ -234,7 +240,7 @@ async def _search_postgres(
             vector.op("@@")(ts_query),
         )
         .order_by(rank.desc())
-        .limit(limit)
+        .limit(max(limit * 4, 20))
     )
     if document_ids:
         stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
@@ -244,7 +250,10 @@ async def _search_postgres(
     max_rank = max((float(row[2] or 0) for row in rows), default=0.0)
     for chunk, title, raw_rank in rows:
         normalized = float(raw_rank or 0) / max_rank if max_rank else 0.0
-        score = round(max(MIN_RELEVANCE, normalized), 4)
+        coverage_score, matched = _score_fallback(normalize_for_search(chunk.content), terms)
+        if coverage_score < MIN_RELEVANCE:
+            continue
+        score = round(max(MIN_RELEVANCE, normalized * 0.7 + coverage_score * 0.3), 4)
         hits.append(
             SearchHit(
                 chunk_id=chunk.id,
@@ -254,10 +263,11 @@ async def _search_postgres(
                 excerpt=build_excerpt(chunk.content, terms),
                 score=score,
                 page_hint=chunk.page_hint,
-                matched_terms=terms,
+                matched_terms=matched,
             )
         )
-    return hits
+    hits.sort(key=lambda hit: (-hit.score, hit.document_title, hit.chunk_index))
+    return hits[:limit]
 
 
 async def _search_fallback(

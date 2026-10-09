@@ -22,7 +22,9 @@ _TEST_DB_DIR.mkdir(parents=True, exist_ok=True)
 _TEST_DB_PATH = _TEST_DB_DIR / f"test-{uuid.uuid4().hex}.db"
 
 os.environ.setdefault("OPSPILOT_ENVIRONMENT", "test")
-os.environ["OPSPILOT_DATABASE_URL"] = f"sqlite+aiosqlite:///{_TEST_DB_PATH.as_posix()}"
+os.environ["OPSPILOT_DATABASE_URL"] = os.environ.get(
+    "OPSPILOT_TEST_DATABASE_URL", f"sqlite+aiosqlite:///{_TEST_DB_PATH.as_posix()}"
+)
 os.environ["OPSPILOT_JWT_SECRET"] = "test-secret-not-used-in-production"
 os.environ["OPSPILOT_LLM_PROVIDER"] = "mock"
 os.environ["OPSPILOT_DEMO_PASSWORD"] = "DemoTest!2026"

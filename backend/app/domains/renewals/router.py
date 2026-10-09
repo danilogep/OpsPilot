@@ -111,12 +111,20 @@ async def export_renewals(
     session: SessionDep, user: RequireViewer, filters: FiltersDep
 ) -> Response:
     """Exporta a listagem filtrada de renovações em CSV."""
-    renewals, _ = await service.list_renewals(
+    renewals, total = await service.list_renewals(
         session,
         organization_id=user.organization_id,
         params=PageParams(page=1, page_size=200),
         filters=filters,
     )
+    for page in range(2, (total + 199) // 200 + 1):
+        batch, _ = await service.list_renewals(
+            session,
+            organization_id=user.organization_id,
+            params=PageParams(page=page, page_size=200),
+            filters=filters,
+        )
+        renewals.extend(batch)
     plans = await service.plan_names(session, organization_id=user.organization_id)
     today = utcnow().date()
     return csv_response(

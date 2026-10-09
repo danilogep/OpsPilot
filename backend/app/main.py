@@ -89,7 +89,7 @@ def create_app() -> FastAPI:
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     @app.get("/health", tags=["Infraestrutura"], summary="Healthcheck completo")
-    async def health() -> dict[str, Any]:
+    async def health(response: Response) -> dict[str, Any]:
         """Verifica aplicação e conectividade com o banco."""
         database_ok = True
         try:
@@ -98,6 +98,8 @@ def create_app() -> FastAPI:
         except Exception:  # pragma: no cover - depende de infraestrutura
             database_ok = False
             logger.warning("health_database_unavailable")
+        if not database_ok:
+            response.status_code = 503
         return {
             "status": "ok" if database_ok else "degraded",
             "version": __version__,

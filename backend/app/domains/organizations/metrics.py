@@ -59,6 +59,7 @@ async def customer_overview(session: AsyncSession, *, organization_id: uuid.UUID
         for row in rows
     }
     total = sum(int(row[1]) for row in rows)
+    billable_total = sum(int(row[1]) for row in rows if row[0] in ACTIVE_STATUSES)
     active_revenue = sum(Decimal(row[2] or 0) for row in rows if row[0] in ACTIVE_STATUSES)
     return {
         "total_customers": total,
@@ -68,8 +69,8 @@ async def customer_overview(session: AsyncSession, *, organization_id: uuid.UUID
         "prospect_customers": by_status.get(CustomerStatus.PROSPECT.value, {}).get("total", 0),
         "monthly_revenue": str(Decimal(active_revenue).quantize(Decimal("0.01"))),
         "average_ticket": str(
-            (Decimal(active_revenue) / total).quantize(Decimal("0.01"))
-            if total
+            (Decimal(active_revenue) / billable_total).quantize(Decimal("0.01"))
+            if billable_total
             else Decimal("0.00")
         ),
         "by_status": by_status,
@@ -390,7 +391,8 @@ async def revenue_timeline(
     portável entre PostgreSQL e SQLite.
     """
     today = utcnow().date()
-    first_month = date(today.year, today.month, 1) - timedelta(days=31 * (months - 1))
+    month_index = today.year * 12 + today.month - months
+    first_month = date(month_index // 12, month_index % 12 + 1, 1)
     rows = (
         await session.execute(
             select(Customer.start_date, Customer.monthly_value, Customer.status).where(

@@ -45,7 +45,7 @@ case "$COMMAND" in
     alembic upgrade head
     if [ "${OPSPILOT_RUN_SEED:-true}" = "true" ]; then
       echo "executando seed idempotente..."
-      python scripts_seed.py || echo "seed falhou (segue sem interromper o servico)"
+      python scripts_seed.py
     fi
     echo "iniciando uvicorn..."
     exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers

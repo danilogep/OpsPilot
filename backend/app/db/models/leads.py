@@ -62,7 +62,7 @@ class Lead(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDeleteMixin,
     score_method: Mapped[ScoringMethod] = mapped_column(
         enum_type(ScoringMethod, length=8), default=ScoringMethod.RULES
     )
-    score_version: Mapped[str] = mapped_column(String(20), default="rules-v1")
+    score_version: Mapped[str] = mapped_column(String(64), default="rules-v1")
     scored_at: Mapped[datetime | None] = mapped_column(default=None)
     next_step: Mapped[str | None] = mapped_column(String(300), default=None)
     risks: Mapped[list[str]] = mapped_column(default=list)
