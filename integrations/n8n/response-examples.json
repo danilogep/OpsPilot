@@ -1,0 +1,61 @@
+{
+  "lead_processed": {
+    "received": true,
+    "event_id": "7a1c3d52-9f0e-4c2b-9a1d-6f8b2c4e7d10",
+    "status": "PROCESSED",
+    "idempotency_key": "lead-demo-001",
+    "message": "Lead criado com score 84 (HOT).",
+    "entity_id": "3d9f41aa-15c7-4a3e-8f0b-2d7e9c1a4b55",
+    "duplicate": false
+  },
+  "lead_duplicate": {
+    "received": true,
+    "event_id": "7a1c3d52-9f0e-4c2b-9a1d-6f8b2c4e7d10",
+    "status": "DUPLICATE",
+    "idempotency_key": "lead-demo-001",
+    "message": "Evento já processado anteriormente.",
+    "entity_id": "3d9f41aa-15c7-4a3e-8f0b-2d7e9c1a4b55",
+    "duplicate": true
+  },
+  "renewal_processed": {
+    "received": true,
+    "event_id": "b2d4e6f8-1234-4abc-9def-0123456789ab",
+    "status": "PROCESSED",
+    "idempotency_key": "renewal-demo-001",
+    "message": "Renovação atualizada para Clínica Vida ME em 10/03/2027.",
+    "entity_id": "5c8e2b10-77aa-4f31-93cd-1e4b6a0d9f22",
+    "duplicate": false
+  },
+  "invalid_signature": {
+    "error": {
+      "code": "unauthenticated",
+      "message": "Assinatura do webhook inválida ou ausente.",
+      "details": { "header": "X-OpsPilot-Signature" },
+      "correlation_id": "4f2b9a7c1d3e4f5a6b7c8d9e0f1a2b3c"
+    }
+  },
+  "customer_not_found": {
+    "error": {
+      "code": "not_found",
+      "message": "Cliente não encontrado para o evento de renovação.",
+      "details": {},
+      "correlation_id": "9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a"
+    }
+  },
+  "outbound_import_completed": {
+    "event": "import.completed",
+    "organization_id": "0f3f8c2a-5d1b-4e7a-9c3d-8b2a6f1e4d70",
+    "idempotency_key": "import-9c1e5f3a-2b4d-4c6e-8f0a-1d3b5c7e9f11",
+    "correlation_id": "4f2b9a7c1d3e4f5a6b7c8d9e0f1a2b3c",
+    "sent_at": "2026-10-09T12:34:56.789012+00:00",
+    "data": {
+      "import_id": "9c1e5f3a-2b4d-4c6e-8f0a-1d3b5c7e9f11",
+      "filename": "customers.csv",
+      "created_customers": 97,
+      "updated_customers": 3,
+      "created_renewals": 88,
+      "invalid_rows": 14,
+      "duplicate_rows": 13
+    }
+  }
+}

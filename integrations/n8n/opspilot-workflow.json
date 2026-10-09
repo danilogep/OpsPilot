@@ -1,0 +1,337 @@
+{
+  "name": "OpsPilot — Leads, renovações e alertas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "opspilot-novo-lead",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "name": "Webhook novo lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-520, 0],
+      "webhookId": "opspilot-novo-lead"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({\n  name: $json.body.name,\n  company: $json.body.company,\n  email: $json.body.email,\n  phone: $json.body.phone,\n  source: $json.body.source || 'n8n',\n  segment: $json.body.segment,\n  company_size: $json.body.company_size || 'UNKNOWN',\n  interest: $json.body.interest,\n  estimated_value: $json.body.estimated_value || '0.00',\n  notes: $json.body.notes,\n  external_id: $json.body.external_id\n}) }}",
+        "options": {}
+      },
+      "id": "a2222222-2222-4222-8222-222222222222",
+      "name": "Montar payload do lead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-300, 0]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.data }}",
+        "dataPropertyName": "signature",
+        "secret": "={{ $env.OPSPILOT_WEBHOOK_SECRET }}",
+        "encoding": "hex"
+      },
+      "id": "a3333333-3333-4333-8333-333333333333",
+      "name": "Assinar payload (HMAC SHA-256)",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [-80, 0],
+      "notes": "A assinatura é calculada sobre o corpo bruto exatamente como será enviado."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.OPSPILOT_API_BASE_URL }}/api/v1/integrations/webhooks/leads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-OpsPilot-Event", "value": "lead.created" },
+            {
+              "name": "X-OpsPilot-Signature",
+              "value": "=sha256={{ $json.signature }}"
+            },
+            {
+              "name": "X-OpsPilot-Idempotency-Key",
+              "value": "=lead-{{ $execution.id }}-{{ $itemIndex }}"
+            },
+            { "name": "X-OpsPilot-Organization", "value": "acme-servicos" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.data }}",
+        "options": { "response": { "response": { "neverError": true, "fullResponse": true } } }
+      },
+      "id": "a4444444-4444-4444-8444-444444444444",
+      "name": "POST /webhooks/leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [140, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a5555555-5555-4555-8555-555555555555",
+      "name": "Lead aceito?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [360, 0]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "a6666666-6666-4666-8666-666666666666",
+      "name": "Sucesso (notificar time)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [580, -100],
+      "notes": "Troque por Slack, e-mail ou Telegram conforme a necessidade."
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "a7777777-7777-4777-8777-777777777777",
+      "name": "Falha (registrar erro)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [580, 100],
+      "notes": "O corpo da resposta traz error.code e error.message padronizados."
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "opspilot-eventos",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "b1111111-1111-4111-8111-111111111111",
+      "name": "Webhook eventos do OpsPilot",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-520, 320],
+      "webhookId": "opspilot-eventos",
+      "notes": "Configure esta URL em OPSPILOT_WEBHOOK_OUTBOUND_URL para receber import.completed e lead.classified."
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "version": 2 },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.event }}",
+                    "rightValue": "import.completed",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "import.completed"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "version": 2 },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.event }}",
+                    "rightValue": "lead.classified",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "lead.classified"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "b2222222-2222-4222-8222-222222222222",
+      "name": "Rotear por tipo de evento",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [-280, 320]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "b3333333-3333-4333-8333-333333333333",
+      "name": "Resumo da importação",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-40, 220],
+      "notes": "data.created_customers, data.updated_customers, data.invalid_rows."
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "b4444444-4444-4444-8444-444444444444",
+      "name": "Lead classificado",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-40, 360],
+      "notes": "data.score, data.category, data.next_action."
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "b5555555-5555-4555-8555-555555555555",
+      "name": "Evento não tratado",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-40, 500]
+    },
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 9 * * 1-5" }] }
+      },
+      "id": "c1111111-1111-4111-8111-111111111111",
+      "name": "Toda manhã (dias úteis)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-520, 640]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.OPSPILOT_API_BASE_URL }}/api/v1/auth/login",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: 'analyst@opspilot.local', password: $env.OPSPILOT_DEMO_PASSWORD }) }}",
+        "options": {}
+      },
+      "id": "c2222222-2222-4222-8222-222222222222",
+      "name": "Autenticar na API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-280, 640],
+      "notes": "Em produção use um usuário de serviço e credenciais do n8n, não variáveis de demonstração."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.OPSPILOT_API_BASE_URL }}/api/v1/renewals/indicators",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $json.access_token }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3333333-3333-4333-8333-333333333333",
+      "name": "GET /renewals/indicators",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-40, 640]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.due_next_7_days }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c4444444-4444-4444-8444-444444444444",
+      "name": "Há renovações em 7 dias?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [200, 640]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "c5555555-5555-4555-8555-555555555555",
+      "name": "Alertar time de CS",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [440, 560],
+      "notes": "Envie para Slack, e-mail ou Telegram com due_next_7_days e amount_at_risk."
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "c6666666-6666-4666-8666-666666666666",
+      "name": "Nada a alertar",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [440, 720]
+    }
+  ],
+  "connections": {
+    "Webhook novo lead": {
+      "main": [[{ "node": "Montar payload do lead", "type": "main", "index": 0 }]]
+    },
+    "Montar payload do lead": {
+      "main": [[{ "node": "Assinar payload (HMAC SHA-256)", "type": "main", "index": 0 }]]
+    },
+    "Assinar payload (HMAC SHA-256)": {
+      "main": [[{ "node": "POST /webhooks/leads", "type": "main", "index": 0 }]]
+    },
+    "POST /webhooks/leads": {
+      "main": [[{ "node": "Lead aceito?", "type": "main", "index": 0 }]]
+    },
+    "Lead aceito?": {
+      "main": [
+        [{ "node": "Sucesso (notificar time)", "type": "main", "index": 0 }],
+        [{ "node": "Falha (registrar erro)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Webhook eventos do OpsPilot": {
+      "main": [[{ "node": "Rotear por tipo de evento", "type": "main", "index": 0 }]]
+    },
+    "Rotear por tipo de evento": {
+      "main": [
+        [{ "node": "Resumo da importação", "type": "main", "index": 0 }],
+        [{ "node": "Lead classificado", "type": "main", "index": 0 }],
+        [{ "node": "Evento não tratado", "type": "main", "index": 0 }]
+      ]
+    },
+    "Toda manhã (dias úteis)": {
+      "main": [[{ "node": "Autenticar na API", "type": "main", "index": 0 }]]
+    },
+    "Autenticar na API": {
+      "main": [[{ "node": "GET /renewals/indicators", "type": "main", "index": 0 }]]
+    },
+    "GET /renewals/indicators": {
+      "main": [[{ "node": "Há renovações em 7 dias?", "type": "main", "index": 0 }]]
+    },
+    "Há renovações em 7 dias?": {
+      "main": [
+        [{ "node": "Alertar time de CS", "type": "main", "index": 0 }],
+        [{ "node": "Nada a alertar", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Sao_Paulo" },
+  "pinData": {},
+  "meta": {
+    "instanceId": "opspilot-demo",
+    "description": "Workflow de demonstração do OpsPilot. Dados sintéticos, nenhuma credencial real."
+  },
+  "tags": [{ "name": "opspilot" }, { "name": "demo" }]
+}

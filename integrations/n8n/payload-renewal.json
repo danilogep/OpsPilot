@@ -1,0 +1,9 @@
+{
+  "customer_email": "contato@clinica-vida1.com.br",
+  "customer_name": "Clínica Vida ME",
+  "due_date": "2027-03-10",
+  "amount": "499.00",
+  "status": "AT_RISK",
+  "notes": "Cliente pediu revisão de escopo antes de renovar.",
+  "external_id": "crm-8821"
+}
