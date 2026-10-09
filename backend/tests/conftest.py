@@ -30,7 +30,7 @@ os.environ["OPSPILOT_UPLOAD_DIR"] = str(_TEST_DB_DIR / "uploads")
 os.environ["OPSPILOT_LOG_LEVEL"] = "WARNING"
 
 from httpx import ASGITransport, AsyncClient  # noqa: E402
-from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, async_sessionmaker  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker  # noqa: E402
 
 from app.core.config import settings  # noqa: E402
 from app.db.base import Base  # noqa: E402
@@ -57,28 +57,24 @@ async def _create_schema() -> AsyncIterator[None]:
     _TEST_DB_PATH.unlink(missing_ok=True)
 
 
-@pytest.fixture
-async def connection() -> AsyncIterator[AsyncConnection]:
-    """Conexão com transação externa revertida no fim do teste."""
+async def _truncate_all() -> None:
+    """Esvazia todas as tabelas, respeitando a ordem das chaves estrangeiras.
+
+    O driver do SQLite não suporta o padrão "transação externa + savepoint" de
+    forma confiável, então o isolamento entre testes é feito limpando o banco
+    antes de cada teste. É rápido o suficiente e não depende do dialeto.
+    """
     engine = get_engine()
-    async with engine.connect() as conn:
-        transaction = await conn.begin()
-        try:
-            yield conn
-        finally:
-            if transaction.is_active:
-                await transaction.rollback()
+    async with engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
 
 
 @pytest.fixture
-async def session(connection: AsyncConnection) -> AsyncIterator[AsyncSession]:
-    """Sessão de teste que participa da transação externa via savepoints."""
-    factory = async_sessionmaker(
-        bind=connection,
-        expire_on_commit=False,
-        autoflush=False,
-        join_transaction_mode="create_savepoint",
-    )
+async def session() -> AsyncIterator[AsyncSession]:
+    """Sessão de teste em banco limpo."""
+    await _truncate_all()
+    factory = async_sessionmaker(bind=get_engine(), expire_on_commit=False, autoflush=False)
     async with factory() as test_session:
         yield test_session
 
