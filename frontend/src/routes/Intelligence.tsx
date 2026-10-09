@@ -6,6 +6,7 @@ import {
   Table,
   ActionError,
 } from "@/components/Data";
+import { AnswerText } from "@/components/AnswerText";
 import { Card, CardBody, CardHeader, PageHeader } from "@/components/ui/Card";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -215,12 +216,7 @@ function Answer({ answer }: { answer: AssistantAnswer }) {
         }
       />
       <CardBody>
-        <p
-          className="whitespace-pre-wrap leading-relaxed"
-          data-testid="assistant-answer"
-        >
-          {answer.answer}
-        </p>
+        <AnswerText text={answer.answer} data-testid="assistant-answer" />
         {answer.facts.length > 0 && (
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {answer.facts.map((f, i) => (
@@ -453,7 +449,7 @@ export function Agents() {
             }
           />
           <CardBody>
-            <p className="mb-5 whitespace-pre-wrap">{run.data.answer}</p>
+            <AnswerText text={run.data.answer} className="mb-5" />
             <Table
               rows={run.data.steps}
               columns={[

@@ -10,6 +10,7 @@ import {
   ActionError,
   options,
 } from "@/components/Data";
+import { AnswerText } from "@/components/AnswerText";
 import { RecordForm, type FormField } from "@/components/RecordForm";
 import { Card, CardHeader, CardBody, PageHeader } from "@/components/ui/Card";
 import { Badge, ScoreBadge } from "@/components/ui/Badge";
@@ -571,7 +572,7 @@ export function LeadDetail() {
                 {draft.data && (
                   <div className="mt-5">
                     <InlineNotice>
-                      <p className="whitespace-pre-wrap">{draft.data.draft}</p>
+                      <AnswerText text={draft.data.draft} />
                       <p className="mt-3 text-xs">{draft.data.disclaimer}</p>
                     </InlineNotice>
                   </div>
@@ -710,7 +711,7 @@ export function Renewals() {
       {summary.data && (
         <Card className="mb-6">
           <CardBody>
-            <p className="whitespace-pre-wrap">{summary.data.summary}</p>
+            <AnswerText text={summary.data.summary} />
             <ul className="mt-4 list-inside list-disc">
               {summary.data.recommended_actions.map((a) => (
                 <li key={a}>{a}</li>

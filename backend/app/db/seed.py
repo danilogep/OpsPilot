@@ -482,7 +482,9 @@ async def _ensure_customers(
                 status=status,
                 plan_id=plan.id,
                 monthly_value=max(Decimal("0.00"), base_value + variation),
-                start_date=today - timedelta(days=rng.randint(60, 1100)),
+                # Inclui contratos recentes para que a evolução da carteira
+                # tenha movimento também no mês corrente.
+                start_date=today - timedelta(days=rng.randint(3, 1100)),
                 renewal_date=_customer_renewal_date(index, today, rng),
                 source=SOURCES[index % len(SOURCES)],
                 notes=f"Cliente sintético de demonstração em {city}.",

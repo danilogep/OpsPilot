@@ -6,6 +6,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { Button } from "@/components/ui/Button";
 import { AsyncBoundary } from "@/components/ui/States";
 import { RecordForm } from "@/components/RecordForm";
+import { AnswerText, parseAnswer } from "@/components/AnswerText";
 import { AuthProvider } from "@/lib/auth";
 import { Login } from "@/routes/Login";
 import { Customers } from "@/routes/Crm";
@@ -193,4 +194,43 @@ describe("contrato HTTP e formatação", () => {
   });
   it("preserva datas sem hora no calendário brasileiro", () =>
     expect(formatDate("2026-10-09")).toBe("09/10/2026"));
+});
+
+describe("texto gerado pela IA", () => {
+  it("formata negrito, listas e numeração sem deixar marcação crua", () => {
+    render(
+      <AnswerText
+        text={
+          "Valor em risco calculado.\n\n**Números usados**\n- **Valor:** R$ 15.584,00\n- Renovações vencidas: 24\n\n**Como cheguei**\n1. Somei as vencidas.\n2. Acrescentei as em risco."
+        }
+        data-testid="resposta"
+      />,
+    );
+    const bloco = screen.getByTestId("resposta");
+    expect(bloco.textContent).not.toContain("**");
+    expect(screen.getByText("Números usados").tagName).toBe("STRONG");
+    expect(bloco.querySelectorAll("ul li")).toHaveLength(2);
+    expect(bloco.querySelectorAll("ol li")).toHaveLength(2);
+    expect(screen.getByText(/R\$ 15\.584,00/)).toBeInTheDocument();
+  });
+
+  it("trata o texto como dado e nunca injeta HTML do modelo", () => {
+    render(
+      <AnswerText
+        text={'<img src=x onerror="alert(1)"> **negrito**'}
+        data-testid="resposta"
+      />,
+    );
+    const bloco = screen.getByTestId("resposta");
+    expect(bloco.querySelector("img")).toBeNull();
+    expect(bloco.textContent).toContain('<img src=x onerror="alert(1)">');
+  });
+
+  it("separa blocos preservando parágrafos", () => {
+    expect(parseAnswer("Um\n\nDois\n- a\n- b")).toEqual([
+      { kind: "paragraph", lines: ["Um"] },
+      { kind: "paragraph", lines: ["Dois"] },
+      { kind: "bullets", items: ["a", "b"] },
+    ]);
+  });
 });
