@@ -1,0 +1,119 @@
+# OpsPilot — ambiente completo de demonstração.
+#
+#   docker compose up --build                  # postgres + backend + frontend
+#   docker compose --profile automation up -d  # inclui o n8n (opcional)
+#
+# Os valores abaixo são de desenvolvimento local. Copie .env.example para .env
+# para sobrescrevê-los. Nenhum segredo real deve ser versionado.
+
+name: opspilot
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: opspilot-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-opspilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opspilot_local_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-opspilot}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opspilot} -d ${POSTGRES_DB:-opspilot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: opspilot-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      OPSPILOT_ENVIRONMENT: ${OPSPILOT_ENVIRONMENT:-local}
+      OPSPILOT_DEBUG: ${OPSPILOT_DEBUG:-true}
+      OPSPILOT_LOG_LEVEL: ${OPSPILOT_LOG_LEVEL:-INFO}
+      OPSPILOT_LOG_JSON: ${OPSPILOT_LOG_JSON:-false}
+      OPSPILOT_DATABASE_URL: >-
+        postgresql+asyncpg://${POSTGRES_USER:-opspilot}:${POSTGRES_PASSWORD:-opspilot_local_dev_only}@db:5432/${POSTGRES_DB:-opspilot}
+      OPSPILOT_JWT_SECRET: ${OPSPILOT_JWT_SECRET:-local-demo-secret-change-me}
+      OPSPILOT_ACCESS_TOKEN_EXPIRE_MINUTES: ${OPSPILOT_ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      OPSPILOT_CORS_ORIGINS: ${OPSPILOT_CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
+      OPSPILOT_DEMO_ORG_NAME: ${OPSPILOT_DEMO_ORG_NAME:-Acme Serviços Ltda}
+      OPSPILOT_DEMO_PASSWORD: ${OPSPILOT_DEMO_PASSWORD:-OpsPilot!2026}
+      OPSPILOT_LLM_PROVIDER: ${OPSPILOT_LLM_PROVIDER:-mock}
+      OPSPILOT_LLM_MODEL: ${OPSPILOT_LLM_MODEL:-}
+      OPSPILOT_ANTHROPIC_API_KEY: ${OPSPILOT_ANTHROPIC_API_KEY:-}
+      OPSPILOT_OPENAI_API_KEY: ${OPSPILOT_OPENAI_API_KEY:-}
+      OPSPILOT_GEMINI_API_KEY: ${OPSPILOT_GEMINI_API_KEY:-}
+      OPSPILOT_WEBHOOK_SECRET: ${OPSPILOT_WEBHOOK_SECRET:-opspilot_webhook_demo_secret}
+      OPSPILOT_WEBHOOK_OUTBOUND_URL: ${OPSPILOT_WEBHOOK_OUTBOUND_URL:-}
+      OPSPILOT_RUN_SEED: ${OPSPILOT_RUN_SEED:-true}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - backend_uploads:/app/var/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    container_name: opspilot-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: opspilot-n8n
+    profiles: ["automation"]
+    restart: unless-stopped
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: America/Sao_Paulo
+      N8N_BASIC_AUTH_ACTIVE: ${N8N_BASIC_AUTH_ACTIVE:-true}
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-opspilot}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-opspilot_local_dev_only}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      # Endereço do backend visto de dentro da rede do compose.
+      OPSPILOT_API_BASE_URL: http://backend:8000
+      OPSPILOT_WEBHOOK_SECRET: ${OPSPILOT_WEBHOOK_SECRET:-opspilot_webhook_demo_secret}
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./integrations/n8n:/workflows:ro
+
+volumes:
+  postgres_data:
+  backend_uploads:
+  n8n_data:

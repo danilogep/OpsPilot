@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+frontend/dist/
+frontend/coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Dados gerados (amostras versionadas ficam em data/samples)
+data/generated/*
+!data/generated/.gitkeep
+backend/var/
+uploads/
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
