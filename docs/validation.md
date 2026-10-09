@@ -28,3 +28,15 @@ npm run test:e2e
 ```
 
 O ambiente validado permanece disponível em `http://localhost:5173` e a API em `http://localhost:8000` enquanto os containers estiverem ativos.
+
+## Revalidação — 09/10/2026 (sessão de publicação)
+
+- Backend SQLite: 228 testes passaram.
+- Ruff (`check` e `format --check`): passou em 113 arquivos.
+- MyPy strict: passou em 101 arquivos.
+- Frontend ESLint, TypeScript, Vitest (10 testes) e build de produção: passaram.
+- Docker Compose: `db`, `backend` e `frontend` em `healthy`.
+- Smoke test: 9 verificações passaram.
+- Playwright: 5 testes E2E passaram no Chromium.
+- `/health` retornou `status: ok`, `database: ok`, `llm_provider: mock`; `/docs`, `/redoc` e o frontend responderam 200.
+- Projeto publicado em <https://github.com/danilogep/OpsPilot> (branch `main`), sem segredos nem artefatos no histórico.

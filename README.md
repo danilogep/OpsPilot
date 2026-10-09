@@ -6,9 +6,11 @@ Uma aplicação demonstrável para transformar planilhas em uma carteira organiz
 
 ## Executar com Docker
 
-Requisitos: Docker Desktop em execução com containers Linux. Na raiz:
+Requisitos: Git e Docker Desktop em execução com containers Linux.
 
 ```powershell
+git clone https://github.com/danilogep/OpsPilot.git
+cd OpsPilot
 docker compose up --build -d
 docker compose ps
 ```
@@ -134,4 +136,21 @@ n8n é opcional: `docker compose --profile automation up -d`. Consulte [integra�
 - [Validação desta entrega](docs/validation.md)
 
 Processamento síncrono de arquivos pequenos; sem fila distribuída, OCR, WhatsApp, cobrança ou disparo comercial. O gráfico mostra novos contratos por mês de início, não histórico contábil. Multi-organização exige revisão adicional antes de um SaaS público.
-Próximas evoluções: fila de processamento, limites de consumo por organização, PostgreSQL RLS, embeddings opcionais, integrações CRM/Sheets e deploy com TLS.
+
+## Roadmap
+
+Itens **não implementados**, listados como evolução natural do produto. A ordem reflete o custo de entrega versus o ganho percebido por uma pequena empresa.
+
+| Evolução | O que muda | Pré-requisito |
+| --- | --- | --- |
+| Fila de processamento (Redis + worker) | importar planilhas grandes sem bloquear a requisição | serviço Redis e worker separado |
+| Alertas por e-mail | aviso automático de renovação e inadimplência | provedor SMTP e política de opt-out |
+| Google Sheets | ler a planilha direto da conta do cliente | OAuth do Google e consentimento |
+| WhatsApp e Telegram | enviar as mensagens hoje apenas sugeridas | API oficial, modelos aprovados e trilha de consentimento |
+| CRM (HubSpot, Pipedrive, RD Station) | sincronizar leads nos dois sentidos | mapeamento de campos e resolução de conflito |
+| Pagamentos (Pix, assinatura recorrente) | conciliar cobrança com renovação | provedor de pagamento e reconciliação |
+| Power BI / exportação analítica | levar os indicadores ao BI da empresa | endpoint OData ou dataset agendado |
+| Embeddings na base de conhecimento | busca semântica somada à textual | provider de embeddings e armazenamento vetorial (pgvector) |
+| OCR em PDF digitalizado | indexar documento sem texto selecionável | motor de OCR e revisão de qualidade |
+| Multi-tenant avançado | isolamento no banco com PostgreSQL RLS e limites por organização | migração de políticas e testes de isolamento |
+| Deploy em nuvem | ambiente público com TLS, backup e observabilidade | infraestrutura, domínio e rotina de restauração |

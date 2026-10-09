@@ -1,93 +1,68 @@
-# Handoff — continuar o OpsPilot no Claude Code
+# Handoff — continuar o OpsPilot
 
-Cole a mensagem abaixo na aba Code do Claude, dentro da pasta deste repositório.
+Cole a mensagem abaixo na aba Code do Claude (ou no Codex), dentro da pasta deste repositório.
 
 ---
 
-Você está continuando um projeto existente. Leia primeiro `CLAUDE.md`, `README.md`, `docs/validation.md` se existir, `docker-compose.yml` e o estado do Git. Não reescreva funcionalidades que já estão implementadas. Inspecione o código atual antes de editar.
+Você está continuando um projeto existente e **publicado**. Leia primeiro `CLAUDE.md`, `README.md`, `docs/validation.md`, `docker-compose.yml` e o estado do Git. Não reescreva funcionalidades já implementadas. Inspecione o código atual antes de editar.
 
-## Objetivo
+## Estado atual (atualizado em 09/10/2026)
 
-Concluir, validar e preparar para publicação o OpsPilot — Hub de Operações, Dados e IA. O projeto usa somente dados sintéticos e deve funcionar sem chave de IA usando `LLM_PROVIDER=mock`.
+- Repositório publicado em <https://github.com/danilogep/OpsPilot>, branch `main`, remote `origin` configurado.
+- 7 commits, 197 arquivos versionados, árvore de trabalho limpa no momento do push.
+- Nenhum `.env`, token, banco local, `node_modules`, `.venv` ou artefato gerado foi publicado.
+- Ambiente Docker validado e saudável: `db`, `backend` e `frontend`.
 
-## O que já foi implementado
+### Objetivo do produto
 
-### Backend
+OpsPilot — Hub de Operações, Dados e IA para pequenas empresas. Somente dados sintéticos. Funciona sem chave de IA com `OPSPILOT_LLM_PROVIDER=mock` (padrão).
 
-- FastAPI modular por domínio.
-- PostgreSQL 16 com SQLAlchemy assíncrono e Alembic.
-- SQLite temporário para testes.
-- JWT, Argon2, papéis ADMIN/ANALYST/VIEWER e isolamento por organização.
-- Clientes, planos, leads, renovações e histórico.
-- Importação CSV/XLSX/XLS com mapeamento, normalização, validação, duplicidades, preview, commit e relatório.
-- Dashboard com métricas calculadas no banco.
-- Assistente de IA com provider mock, Anthropic, OpenAI e Gemini.
-- Respostas fundamentadas com fontes.
-- Base de conhecimento para TXT, Markdown, PDF, DOCX, CSV e XLSX.
-- Busca PostgreSQL Full Text Search em português e fallback lexical para SQLite.
-- Score determinístico de leads e classificação opcional por IA.
-- Agentes com ferramentas allowlisted, limite de passos e rastreamento.
-- Webhooks HMAC com idempotência e fluxo n8n de exemplo.
-- Auditoria e histórico de uso da IA.
-- Healthcheck completo e liveness.
-- Exportação CSV.
+## O que está implementado
 
-### Frontend
+### Backend (FastAPI, Python 3.12)
 
-- React 18, TypeScript, Vite, Tailwind, TanStack Query e Recharts.
-- Login e sessão persistente.
-- Layout responsivo com menu lateral e controle por papel.
-- Visão geral com cards, gráfico de evolução, ranking de origens e tabelas críticas.
-- Importações com upload, mapeamento, validação, commit e relatório.
-- Clientes, detalhe do cliente, edição, contato, histórico e exportação.
-- Leads, score, classificação por IA, sugestão de mensagem, notas e histórico.
-- Renovações, filtros, resumo executivo e atualização de status.
-- Planos.
-- Base de conhecimento e busca.
-- Assistente com fontes, fatos e histórico de uso.
-- Agentes com execução e rastro de ferramentas.
-- Integrações com histórico de webhooks.
-- Auditoria.
-- Configurações, papéis e usuários.
-- Estados de loading, erro, vazio, acessibilidade básica e navegação mobile.
+- Modular por domínio, PostgreSQL 16 com SQLAlchemy assíncrono e Alembic (migrations `0001_initial_schema` e `0002_delivery_fixes`).
+- SQLite temporário nos testes; `OPSPILOT_TEST_DATABASE_URL` permite PostgreSQL dedicado.
+- JWT, Argon2, papéis ADMIN/ANALYST/VIEWER e isolamento por `organization_id`.
+- Clientes, planos, leads, renovações, histórico e exportação CSV.
+- Importação CSV/XLSX/XLS: mapeamento sugerido, normalização, validação linha a linha, duplicidades, preview, commit transacional e relatório.
+- Dashboard com métricas calculadas no banco (nenhum número fixo no código).
+- Assistente de IA: provider mock padrão + adapters Anthropic, OpenAI e Gemini.
+- Respostas sempre com fontes; sem evidência responde "Não encontrei evidências suficientes nos dados disponíveis."
+- Base de conhecimento TXT/Markdown/PDF/DOCX/CSV/XLSX com PostgreSQL Full Text Search em português e fallback lexical portátil.
+- Score determinístico de leads (7 critérios, 100 pontos) e classificação opcional por IA.
+- Agentes com ferramentas allowlisted, limite de passos e rastreamento completo.
+- Webhooks HMAC com idempotência e workflow n8n de exemplo.
+- Auditoria e histórico de uso de IA. `/health`, `/health/live`, `/docs`, `/redoc`.
 
-### Qualidade e operação
+### Frontend (React 18, TypeScript, Vite, Tailwind, TanStack Query, Recharts)
 
-- 228 testes backend passaram em SQLite após as correções de entrega.
-- 3 regressões encontradas ao executar PostgreSQL foram corrigidas:
-  1. busca FTS usava AND literal e não encontrava perguntas naturais;
-  2. `score_version` tinha VARCHAR(20), insuficiente para `rules-v1+lead-classifier-v1`;
-  3. migrations não refletiam a largura nova.
-- Foi criada a migration `backend/alembic/versions/0002_delivery_fixes.py`.
-- Foram adicionados testes de regressão em `backend/tests/test_delivery.py`.
-- Foram adicionados testes de componentes/HTTP em `frontend/tests/ui.test.tsx`.
-- Foi criado fluxo E2E em `frontend/tests/e2e/operations.spec.ts`.
-- Foi criado `scripts/smoke_test.py`.
-- Foi criado `.github/workflows/ci.yml`.
-- Foi criada documentação em `README.md` e `docs/`.
-- Dockerfile do backend e healthchecks foram ajustados.
-- O indicador visual de campo obrigatório foi marcado como decorativo para preservar o nome acessível do campo.
+- Login, sessão persistente, layout responsivo com menu lateral e controle por papel.
+- Visão geral, importações, clientes, leads, renovações, planos, base de conhecimento, assistente, agentes, integrações, auditoria e configurações.
+- Estados de carregamento, erro e vazio padronizados; acessibilidade básica e navegação mobile.
 
-## Validações já realizadas
+## Validação executada nesta sessão (09/10/2026)
 
-- `backend`: Ruff passou.
-- `backend`: MyPy passou.
-- `backend`: 228 testes passaram em SQLite.
-- PostgreSQL dedicado: 228 testes passaram com a migration `0002_delivery_fixes` aplicada.
-- `frontend`: ESLint passou.
-- `frontend`: TypeScript passou.
-- `frontend`: build de produção passou.
-- `frontend`: 10 testes de interface/HTTP passaram.
-- `docker compose up --build -d --wait --wait-timeout 240` passou; banco, backend e frontend ficaram saudáveis.
-- Smoke test passou com 9 verificações.
-- Playwright passou com 5 testes E2E no Chromium.
-- O healthcheck do frontend usa `127.0.0.1` para funcionar corretamente no container Nginx.
-- O E2E de upload localiza o input de arquivo diretamente e tolera documentos duplicados no banco de demonstração.
-- `react-router-dom` foi atualizado para `7.18.4`; `npm audit --omit=dev --audit-level=high` retorna zero vulnerabilidades.
+| Verificação | Resultado |
+| --- | --- |
+| `pytest` (SQLite) | 228 testes passaram |
+| `ruff check` + `ruff format --check` | passou (113 arquivos) |
+| `mypy` (strict) | passou (101 arquivos) |
+| `npm run lint` | passou |
+| `npm run typecheck` | passou |
+| `npm run test:run` | 10 testes passaram |
+| `npm run build` | passou (764 kB JS, 22 kB CSS) |
+| `docker compose ps` | 3 serviços `healthy` |
+| `scripts/smoke_test.py` | 9 verificações passaram |
+| `npx playwright test` | 5 testes E2E passaram no Chromium |
+| `/health`, `/docs`, `/redoc`, frontend | HTTP 200; `llm_provider: mock` |
+| `git push origin main` | publicado com sucesso |
+
+Validação anterior em PostgreSQL dedicado: 228 testes passaram com a migration `0002_delivery_fixes` aplicada.
 
 ## Próximos passos opcionais
 
-1. Para repetir a validação completa do backend em PostgreSQL dedicado, execute:
+1. Revalidar o backend em PostgreSQL dedicado:
 
 ```powershell
 $env:OPSPILOT_TEST_DATABASE_URL = 'postgresql+asyncpg://opspilot:opspilot_local_dev_only@localhost:5432/opspilot_test'
@@ -95,45 +70,27 @@ cd backend
 .\.venv\Scripts\python -m pytest
 ```
 
-2. Para subir o ambiente completo em outra sessão:
+2. Subir o ambiente completo:
 
 ```powershell
-cd ..
 docker compose up --build -d --wait --wait-timeout 240
 docker compose ps
 ```
 
-3. Rodar o smoke test:
-
-```powershell
-.\backend\.venv\Scripts\python scripts\smoke_test.py
-```
-
-4. Rodar o E2E:
-
-```powershell
-cd frontend
-npm run test:e2e
-```
-
-5. Se aparecer alguma falha futura, corrigir sem apagar os testes nem reduzir cobertura.
-6. Antes de publicar, conferir `git diff`, `git status` e se não há `.env`, tokens, bancos locais, screenshots ou arquivos gerados no commit.
-7. Ao publicar, preparar uma mensagem final curta com:
-   - arquivos principais alterados;
-   - comandos executados;
-   - resultados dos testes;
-   - limitações conhecidas;
-   - instrução de execução para o GitHub.
+3. Smoke test: `.\backend\.venv\Scripts\python scripts\smoke_test.py`
+4. E2E: `cd frontend; npm run test:e2e`
+5. Capturas de tela para o portfólio: o E2E gera `frontend/test-results/dashboard-desktop.png` e `imports-mobile.png`. Decidir se entram no repositório (hoje estão ignoradas pelo `.gitignore`).
+6. Itens do roadmap do README (fila Redis, alertas por e-mail, Google Sheets, WhatsApp/Telegram, CRM, pagamentos, Power BI, embeddings/pgvector, OCR, RLS multi-tenant, deploy em nuvem) — nenhum iniciado, todos documentados como evolução.
+7. Se aparecer falha futura, corrigir sem apagar testes nem reduzir cobertura.
 
 ## Cuidados
 
-- Não usar dados reais.
-- Não adicionar chaves de API.
-- Não trocar o provider padrão `mock`.
-- Não usar `docker compose down -v` sem necessidade, pois isso apaga o banco local de demonstração.
-- O usuário quer um produto de portfólio demonstrável; mantenha a interface polida e o README comercialmente claro.
+- Não usar dados reais; não adicionar chaves de API; não trocar o provider padrão `mock`.
+- Não usar `docker compose down -v` sem necessidade: apaga o banco local de demonstração.
+- Manter a interface polida e o README comercialmente claro — é um produto de portfólio.
 - Não afirmar que o mock é uma IA real nem que o sistema está em produção.
+- Antes de qualquer novo push, conferir `git status` e `git diff` e garantir que não há `.env`, tokens, bancos locais ou artefatos gerados.
 
 ---
 
-Depois de ler este handoff, comece verificando `git status`, os processos ativos e o resultado dos testes. Continue do estado atual.
+Depois de ler este handoff, comece por `git status`, confira se os containers estão ativos e rode os testes. Continue do estado atual.
